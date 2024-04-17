@@ -2,6 +2,7 @@ import './App.css';
 
 import { app, appInitialization, initialize } from '@microsoft/teams-js';
 import React, { ReactElement } from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import AppAPIs from './components/AppAPIs';
 import AppEntityAPIs from './components/AppEntityAPIs';
@@ -64,6 +65,7 @@ import Version from './components/Version';
 import VideoAPIs from './components/VideoEffectsApis';
 import VisualMediaAPIs from './components/VisualMediaAPIs';
 import WebStorageAPIs from './components/WebStorageAPIs';
+import EmptyPage from './components/EmptyPage';
 
 const urlParams = new URLSearchParams(window.location.search);
 
@@ -129,70 +131,80 @@ export const generateRegistrationMsg = (changeCause: string): string => {
 
 const App = (): ReactElement => {
   return (
-    <div>
-      <div className="App-container">
-        <AppAPIs />
-        <AppInitializationAPIs />
-        <AppInstallDialogAPIs />
-        <AuthenticationAPIs />
-        <AppEntityAPIs />
-        <BarCodeAPIs />
-        <CalendarAPIs />
-        <CallAPIs />
-        <ChatAPIs />
-        <ClipboardAPIs />
-        <CookieAccessComponent />
-        <CustomAPIs />
-        <DialogAPIs />
-        <DialogCardAPIs />
-        <DialogCardBotAPIs />
-        <DialogUpdateAPIs />
-        <DialogUrlAPIs />
-        <DialogUrlBotAPIs />
-        <ExternalAppAuthenticationAPIs />
-        <ExternalAppCardActionsAPIs />
-        <ExternalAppCommandsAPIs />
-        <FilesAPIs />
-        <FullTrustAPIs />
-        <GeoLocationAPIs />
-        <Links />
-        <LocationAPIs />
-        <LogAPIs />
-        <MailAPIs />
-        <MarketplaceAPIs />
-        <MediaAPIs />
-        <MeetingAPIs />
-        <MeetingRoomAPIs />
-        <MenusAPIs />
-        <MessageChannelAPIs />
-        <MonetizationAPIs />
-        <NestedAppAuthAPIs />
-        <NotificationAPIs />
-        <OtherAppStateChangedAPIs />
-        <PagesAPIs />
-        <PagesAppButtonAPIs />
-        <PagesBackStackAPIs />
-        <PagesConfigAPIs />
-        <PagesCurrentAppAPIs />
-        <PagesTabsAPIs />
-        <PeopleAPIs />
-        <PrivateAPIs />
-        <ProfileAPIs />
-        <RemoteCameraAPIs />
-        <SearchAPIs />
-        <SecondaryBrowserAPIs />
-        <SharingAPIs />
-        <WebStorageAPIs />
-        <StageViewAPIs />
-        <TeamsCoreAPIs />
-        <TeamsAPIs />
-        <ThirdPartyCloudStorageAPIs />
-        <VideoAPIs />
-        <VideoExAPIs />
-        <VisualMediaAPIs />
-      </div>
-      <Version />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              <div className="App-container">
+                <AppAPIs />
+                <AppInitializationAPIs />
+                <AppInstallDialogAPIs />
+                <AuthenticationAPIs />
+                <AppEntityAPIs />
+                <BarCodeAPIs />
+                <CalendarAPIs />
+                <CallAPIs />
+                <ChatAPIs />
+                <ClipboardAPIs />
+                <CookieAccessComponent />
+                <CustomAPIs />
+                <DialogAPIs />
+                <DialogCardAPIs />
+                <DialogCardBotAPIs />
+                <DialogUpdateAPIs />
+                <DialogUrlAPIs />
+                <DialogUrlBotAPIs />
+                <ExternalAppAuthenticationAPIs />
+                <ExternalAppCardActionsAPIs />
+                <ExternalAppCommandsAPIs />
+                <FilesAPIs />
+                <FullTrustAPIs />
+                <GeoLocationAPIs />
+                <Links />
+                <LocationAPIs />
+                <LogAPIs />
+                <MailAPIs />
+                <MarketplaceAPIs />
+                <MediaAPIs />
+                <MeetingAPIs />
+                <MeetingRoomAPIs />
+                <MenusAPIs />
+                <MessageChannelAPIs />
+                <MonetizationAPIs />
+                <NestedAppAuthAPIs />
+                <NotificationAPIs />
+                <OtherAppStateChangedAPIs />
+                <PagesAPIs />
+                <PagesAppButtonAPIs />
+                <PagesBackStackAPIs />
+                <PagesConfigAPIs />
+                <PagesCurrentAppAPIs />
+                <PagesTabsAPIs />
+                <PeopleAPIs />
+                <PrivateAPIs />
+                <ProfileAPIs />
+                <RemoteCameraAPIs />
+                <SearchAPIs />
+                <SecondaryBrowserAPIs />
+                <SharingAPIs />
+                <WebStorageAPIs />
+                <StageViewAPIs />
+                <TeamsCoreAPIs />
+                <TeamsAPIs />
+                <ThirdPartyCloudStorageAPIs />
+                <VideoAPIs />
+                <VideoExAPIs />
+                <VisualMediaAPIs />
+              </div>
+              <Version />
+            </>
+          }
+        />
+        <Route path="/second-page" element={<EmptyPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
