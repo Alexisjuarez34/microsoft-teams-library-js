@@ -71,7 +71,7 @@ steps:
     displayName: 'iOS UI/E2E Tests'
     inputs:
       targetType: inline
-      script: "/usr/bin/xcodebuild -configuration Release -workspace /Users/runner/work/1/iOSHost/$(IOSSdkWorkspace).xcworkspace -scheme $(IOSSdkScheme) -testPlan ${{ parameters.testPlan }} -sdk iphonesimulator -parallel-testing-enabled YES -parallel-testing-worker-count 2 -destination 'platform=iOS Simulator,name=iPhone 14 Pro,OS=16.2' -screenshot-enabled=\"YES\" -quiet -resultBundlePath TestResults test
+      script: '/usr/bin/xcodebuild -configuration Release -workspace /Users/runner/work/1/iOSHost/$(IOSSdkWorkspace).xcworkspace -scheme $(IOSSdkScheme) -testPlan ${{ parameters.testPlan }} -sdk iphonesimulator -parallel-testing-enabled YES -parallel-testing-worker-count 2 -destination ''platform=iOS Simulator,name=iPhone 14 Pro,OS=16.2'' -screenshot-enabled="YES" -quiet -resultBundlePath TestResults test'
       workingDirectory: '$(Agent.BuildDirectory)/iOSHost'
 
   - task: Bash@3
