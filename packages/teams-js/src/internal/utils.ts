@@ -5,7 +5,7 @@ import * as uuid from 'uuid';
 
 import { minAdaptiveCardVersion } from '../public/constants';
 import { AdaptiveCardVersion, SdkError } from '../public/interfaces';
-import { pages } from '../public/pages';
+import * as pages from '../public/pages/pages';
 
 /**
  * @internal
@@ -94,6 +94,9 @@ export function generateGUID(): string {
  */
 export function deepFreeze<T extends object>(obj: T): T {
   Object.keys(obj).forEach((prop) => {
+    if (obj[prop] === null || obj[prop] === undefined) {
+      return;
+    }
     if (typeof obj[prop] === 'object') {
       deepFreeze(obj[prop]);
     }
@@ -269,19 +272,22 @@ export function runWithTimeout<TResult, TError>(
  * @internal
  * Limited to Microsoft-internal use
  */
-export function createTeamsAppLink(params: pages.NavigateToAppParams): string {
+export function createTeamsAppLink(params: pages.AppNavigationParameters): string {
   const url = new URL(
     'https://teams.microsoft.com/l/entity/' +
-      encodeURIComponent(params.appId) +
+      encodeURIComponent(params.appId.toString()) +
       '/' +
       encodeURIComponent(params.pageId),
   );
 
   if (params.webUrl) {
-    url.searchParams.append('webUrl', params.webUrl);
+    url.searchParams.append('webUrl', params.webUrl.toString());
   }
-  if (params.channelId || params.subPageId) {
-    url.searchParams.append('context', JSON.stringify({ channelId: params.channelId, subEntityId: params.subPageId }));
+  if (params.chatId || params.channelId || params.subPageId) {
+    url.searchParams.append(
+      'context',
+      JSON.stringify({ chatId: params.chatId, channelId: params.channelId, subEntityId: params.subPageId }),
+    );
   }
   return url.toString();
 }
@@ -416,9 +422,57 @@ export function validateId(id: string, errorToThrow?: Error): void {
   }
 }
 
-function hasScriptTags(id: string): boolean {
-  const scriptRegex = /<script[^>]*>[\s\S]*?<\/script[^>]*>/gi;
-  return scriptRegex.test(id);
+export function validateUrl(url: URL, errorToThrow?: Error): void {
+  const urlString = url.toString().toLocaleLowerCase();
+  if (hasScriptTags(urlString)) {
+    throw errorToThrow || new Error('Invalid Url');
+  }
+  if (urlString.length > 2048) {
+    throw errorToThrow || new Error('Url exceeds the maximum size of 2048 characters');
+  }
+  if (!isValidHttpsURL(url)) {
+    throw errorToThrow || new Error('Url should be a valid https url');
+  }
+}
+
+/**
+ * This function takes in a string that represents a full or relative path and returns a
+ * fully qualified URL object.
+ *
+ * Currently this is accomplished by assigning the input string to an a tag and then retrieving
+ * the a tag's href value. A side effect of doing this is that the string becomes a fully qualified
+ * URL. This is probably not how I would choose to do this, but in order to not unintentionally
+ * break something I've preseved the functionality here and just isolated the code to make it
+ * easier to mock.
+ *
+ * @example
+ *    `fullyQualifyUrlString('https://example.com')` returns `new URL('https://example.com')`
+ *    `fullyQualifyUrlString('helloWorld')` returns `new URL('https://example.com/helloWorld')`
+ *    `fullyQualifyUrlString('hello%20World')` returns `new URL('https://example.com/hello%20World')`
+ *
+ * @param fullOrRelativePath A string representing a full or relative URL.
+ * @returns A fully qualified URL representing the input string.
+ */
+export function fullyQualifyUrlString(fullOrRelativePath: string): URL {
+  const link = document.createElement('a');
+  link.href = fullOrRelativePath;
+  return new URL(link.href);
+}
+
+/**
+ * Detects if there are any script tags in a given string, even if they are Uri encoded or encoded as HTML entities.
+ * @param input string to test for script tags
+ * @returns true if the input string contains a script tag, false otherwise
+ */
+export function hasScriptTags(input: string): boolean {
+  const openingScriptTagRegex = /<script[^>]*>|&lt;script[^&]*&gt;|%3Cscript[^%]*%3E/gi;
+  const closingScriptTagRegex = /<\/script[^>]*>|&lt;\/script[^&]*&gt;|%3C\/script[^%]*%3E/gi;
+
+  const openingOrClosingScriptTagRegex = new RegExp(
+    `${openingScriptTagRegex.source}|${closingScriptTagRegex.source}`,
+    'gi',
+  );
+  return openingOrClosingScriptTagRegex.test(input);
 }
 
 function isIdLengthValid(id: string): boolean {
@@ -449,4 +503,66 @@ export function validateUuid(id: string | undefined | null): void {
   if (uuid.validate(id) === false) {
     throw new Error('id must be a valid UUID');
   }
+}
+
+/**
+ * Cache if performance timers are available to avoid redoing this on each function call.
+ */
+const supportsPerformanceTimers = !!performance && 'now' in performance;
+
+/**
+ * @internal
+ * Limited to Microsoft-internal use
+ * @returns current timestamp in milliseconds
+ */
+export function getCurrentTimestamp(): number | undefined {
+  return supportsPerformanceTimers ? performance.now() + performance.timeOrigin : undefined;
+}
+
+/**
+ * @hidden
+ * @internal
+ * Limited to Microsoft-internal use
+ *
+ * Function to check whether the data is a primitive type or a plain object.
+ * Recursion is limited to a maximum depth of 1000 to prevent excessive nesting and potential stack overflow.
+ *
+ * @param value The value to check
+ * @returns true if the value is a primitive type or a plain object, false otherwise
+ *
+ */
+export function isPrimitiveOrPlainObject(value: unknown, depth: number = 0): boolean {
+  if (depth > 1000) {
+    return false; // Limit recursion depth
+  }
+
+  // Check if the value is a primitive type or null
+  if (
+    typeof value === 'undefined' ||
+    typeof value === 'boolean' ||
+    typeof value === 'number' ||
+    typeof value === 'bigint' ||
+    typeof value === 'string' ||
+    value === null
+  ) {
+    return true;
+  }
+
+  if (Array.isArray(value)) {
+    // Check if all elements in the array are serializable
+    return value.every((element) => isPrimitiveOrPlainObject(element, depth + 1));
+  }
+
+  // Check if the value is a plain object
+  const isPlainObject =
+    typeof value === 'object' &&
+    Object.prototype.toString.call(value) === '[object Object]' &&
+    (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
+
+  if (!isPlainObject) {
+    return false;
+  }
+
+  // Check all properties of the object recursively
+  return Object.keys(value).every((key) => isPrimitiveOrPlainObject(value[key], depth + 1));
 }

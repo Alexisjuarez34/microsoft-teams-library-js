@@ -1,6 +1,6 @@
 import { GlobalVars } from '../../src/internal/globalVars';
 import { validateOrigin } from '../../src/internal/validOrigins';
-import { app } from '../../src/public/app';
+import * as app from '../../src/public/app/app';
 import { _minRuntimeConfigToUninitialize } from '../../src/public/runtime';
 import { Utils } from '../utils';
 describe('validOrigins', () => {
@@ -122,6 +122,19 @@ describe('validOrigins', () => {
       const result = await validateOrigin(messageOrigin);
       GlobalVars.additionalValidOrigins = ['https://*.testdomain.com'];
       expect(result).toBe(false);
+    });
+    it('validateOrigin returns true for high-profile *.cloud.microsoft origins', async () => {
+      let messageOrigin = new URL('https://teams.cloud.microsoft');
+      let result = await validateOrigin(messageOrigin);
+      expect(result).toBe(true);
+
+      messageOrigin = new URL('https://outlook.cloud.microsoft');
+      result = await validateOrigin(messageOrigin);
+      expect(result).toBe(true);
+
+      messageOrigin = new URL('https://m365.cloud.microsoft');
+      result = await validateOrigin(messageOrigin);
+      expect(result).toBe(true);
     });
   });
   describe('testing main validOrigins flow with invalid json object', () => {

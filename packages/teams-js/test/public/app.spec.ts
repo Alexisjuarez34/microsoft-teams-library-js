@@ -1,8 +1,10 @@
 import { errorLibraryNotInitialized } from '../../src/internal/constants';
 import { GlobalVars } from '../../src/internal/globalVars';
 import { DOMMessageEvent } from '../../src/internal/interfaces';
+import { ensureInitialized } from '../../src/internal/internalAPIs';
+import { UUID } from '../../src/internal/uuidObject';
 import { authentication, dialog, menus, pages } from '../../src/public';
-import { app } from '../../src/public/app';
+import * as app from '../../src/public/app/app';
 import {
   ChannelType,
   FrameContexts,
@@ -15,11 +17,13 @@ import {
   ActionObjectType,
   Context,
   FileOpenPreference,
+  LoadContext,
   M365ContentAction,
   SecondaryM365ContentIdName,
 } from '../../src/public/interfaces';
 import {
   _minRuntimeConfigToUninitialize,
+  applyRuntimeConfig,
   generateVersionBasedTeamsRuntimeConfig,
   latestRuntimeApiVersion,
   mapTeamsVersionToSupportedCapabilities,
@@ -43,6 +47,10 @@ function isM365ContentType(actionItem: unknown): actionItem is M365ContentAction
 
 describe('Testing app capability', () => {
   const mockErrorMessage = 'Something went wrong...';
+  const loadContext: LoadContext = {
+    entityId: 'testEntityId',
+    contentUrl: 'https://localhost:4000',
+  };
   describe('Framed - Testing app capability', () => {
     // Use to send a mock message from the app.
     const utils = new Utils();
@@ -53,6 +61,7 @@ describe('Testing app capability', () => {
       utils.childMessages = [];
       utils.childWindow.closed = false;
       utils.mockWindow.parent = utils.parentWindow;
+      utils.setRespondWithTimestamp(false);
 
       // Set a mock window for testing
       app._initialize(utils.mockWindow);
@@ -106,7 +115,7 @@ describe('Testing app capability', () => {
         expect(initMessage).not.toBeNull();
         expect(initMessage.id).toBe(0);
         expect(initMessage.func).toBe('initialize');
-        expect(initMessage.args.length).toEqual(2);
+        expect(initMessage.args.length).toEqual(3);
         expect(initMessage.args[0]).toEqual(version);
         expect(initMessage.args[1]).toEqual(latestRuntimeApiVersion);
         expect(initMessage.timestamp).not.toBeNull();
@@ -551,8 +560,10 @@ describe('Testing app capability', () => {
             sourceOrigin: 'www.origin.com',
             teamTemplateId: 'someTeamTemplateId',
             userClickTime: 2222,
+            userClickTimeV2: 3333,
             userFileOpenPreference: FileOpenPreference.Inline,
             isMultiWindow: true,
+            isBackgroundLoad: true,
             frameContext: context,
             appLaunchId: 'appLaunchId',
             userDisplayName: 'someTestUser',
@@ -568,6 +579,7 @@ describe('Testing app capability', () => {
               sessionId: 'appSessionId',
               theme: 'someTheme',
               userClickTime: 2222,
+              userClickTimeV2: 3333,
               userFileOpenPreference: FileOpenPreference.Inline,
               appLaunchId: 'appLaunchId',
               host: {
@@ -585,6 +597,7 @@ describe('Testing app capability', () => {
               sourceOrigin: 'www.origin.com',
               frameContext: context,
               isMultiWindow: true,
+              isBackgroundLoad: true,
             },
             user: {
               id: 'someUserObjectId',
@@ -691,36 +704,82 @@ describe('Testing app capability', () => {
 
     describe('Testing app.notifySuccess function', () => {
       it('app.notifySuccess should not allow calls before initialization', () => {
-        expect(() => app.notifySuccess()).toThrowError(new Error(errorLibraryNotInitialized));
+        expect(app.notifySuccess).rejects.toThrowError(new Error(errorLibraryNotInitialized));
       });
 
       it('app.notifySuccess should allow calls after initialization called, but before it finished', async () => {
-        expect.assertions(3);
+        expect.assertions(2);
 
         const initPromise = app.initialize();
         const initMessage = utils.findMessageByFunc('initialize');
-        expect(initMessage).not.toBeNull();
+        if (!initMessage) {
+          return;
+        }
 
+        // Send notify success before response from host
         app.notifySuccess();
         let message = utils.findMessageByFunc('appInitialization.success');
         expect(message).toBeNull();
 
+        // Respond from host and then search message
         await utils.respondToMessage(initMessage, 'content');
-
         await initPromise;
-
         message = utils.findMessageByFunc('appInitialization.success');
         expect(message).not.toBeNull();
+      });
+
+      it('app.notifySuccess should resolve without response from host if default runtime', async () => {
+        expect.assertions(1);
+        await utils.initializeWithContext('context');
+
+        // Add app success message
+        const result = await app.notifySuccess();
+        expect(result.hasFinishedSuccessfully).toBe('unknown');
+      });
+
+      it('app.notifySuccess should resolve as soon as the host answers back', async () => {
+        expect.assertions(3);
+        await utils.initializeWithContext('context');
+        if (!ensureInitialized(runtime)) {
+          return;
+        }
+        applyRuntimeConfig({
+          ...runtime,
+          supports: {
+            ...runtime.supports,
+            app: {
+              notifySuccessResponse: true,
+            },
+          },
+        });
+
+        // Test that the promise hasn't resolved before host answers back
+        let hasPromisedResolved = false;
+        const notifySuccessPromise = app.notifySuccess().then((v) => {
+          hasPromisedResolved = true;
+          return v;
+        });
+        expect(hasPromisedResolved).toBe(false);
+
+        // Test the promise resolves successfully after host answers back
+        const notifySuccessMessage = utils.findMessageByFunc('appInitialization.success');
+        if (!notifySuccessMessage) {
+          return;
+        }
+        await utils.respondToMessage(notifySuccessMessage);
+        const result = await notifySuccessPromise;
+        expect(hasPromisedResolved).toBe(true);
+        expect(result.hasFinishedSuccessfully).toBe(true);
       });
 
       Object.values(FrameContexts).forEach((context) => {
         it(`app.notifySuccess should successfully notify success with no error from ${context} context`, async () => {
           await utils.initializeWithContext(context);
-          app.notifyAppLoaded();
-          const message = utils.findMessageByFunc(app.Messages.AppLoaded);
+          app.notifySuccess();
+          const message = utils.findMessageByFunc(app.Messages.Success);
           expect(message).not.toBeNull();
-          expect(message.args.length).toBe(1);
-          expect(message.args[0]).toEqual(version);
+          expect(message?.args?.length).toBe(1);
+          expect((message?.args ?? [])[0]).toEqual(version);
         });
       });
     });
@@ -785,6 +844,73 @@ describe('Testing app capability', () => {
           expect(message.args[0]).toEqual(app.ExpectedFailureReason.PermissionError);
           expect(message.args[1]).toEqual('Failed message');
         });
+      });
+    });
+
+    describe('Testing hostToAppPerformanceMetricsHandler', () => {
+      it('app.registerHostToAppPerformanceMetricsHandler registered function should get called when api SDK call has timestamp', async () => {
+        await utils.initializeWithContext('content');
+        utils.setRespondWithTimestamp(true);
+
+        const handler = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handler);
+
+        // Call an sdk function such as getcontext
+        app.getContext();
+        const getContextMessage = utils.findMessageByFunc('getContext');
+        if (!getContextMessage) {
+          fail('Get context message was never created');
+        }
+        await utils.respondToMessage(getContextMessage, {});
+        expect(handler).toBeCalled();
+      });
+
+      it('app.registerHostToAppPerformanceMetricsHandler registered function should not get called when api SDK call does not have timestamp', async () => {
+        await utils.initializeWithContext('content');
+
+        const handler = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handler);
+
+        // Call an sdk function such as getcontext
+        app.getContext();
+        const getContextMessage = utils.findMessageByFunc('getContext');
+        if (!getContextMessage) {
+          fail('Get context message was never created');
+        }
+        await utils.respondToMessage(getContextMessage, {});
+        expect(handler).not.toBeCalled();
+      });
+
+      it('app.registerHostToAppPerformanceMetricsHandler registered function should not get called when api SDK call response has no info', async () => {
+        await utils.initializeWithContext('content');
+
+        const handler = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handler);
+
+        // Call an sdk function such as getcontext
+        app.getContext();
+        await utils.respondToMessage({ uuid: new UUID(), func: 'weirdFunc' }, {});
+        expect(handler).not.toBeCalled();
+      });
+
+      it('app.registerHostToAppPerformanceMetricsHandler should replace previously registered handler', async () => {
+        await utils.initializeWithContext('content');
+        utils.setRespondWithTimestamp(true);
+
+        const handlerOne = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handlerOne);
+        const handlerTwo = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handlerTwo);
+
+        // Call an sdk function such as getcontext
+        app.getContext();
+        const getContextMessage = utils.findMessageByFunc('getContext');
+        if (!getContextMessage) {
+          fail('Get context message was never created');
+        }
+        await utils.respondToMessage(getContextMessage, {});
+        expect(handlerTwo).toBeCalled();
+        expect(handlerOne).not.toBeCalled();
       });
     });
 
@@ -888,7 +1014,7 @@ describe('Testing app capability', () => {
     describe('Testing app.lifecycle subcapability', () => {
       describe('Testing app.lifecycle.registerBeforeSuspendOrTerminateHandler function', () => {
         it('should not allow calls before initialization', () => {
-          expect(() => app.lifecycle.registerBeforeSuspendOrTerminateHandler(() => {})).toThrowError(
+          expect(() => app.lifecycle.registerBeforeSuspendOrTerminateHandler(async () => {})).toThrowError(
             new Error(errorLibraryNotInitialized),
           );
         });
@@ -897,7 +1023,7 @@ describe('Testing app capability', () => {
           it(`app.lifecycle.registerBeforeSuspendOrTerminateHandler should successfully register a beforSuspendOrTerminate handler and readyToUnload should be called. context: ${context}`, async () => {
             await utils.initializeWithContext(context);
 
-            app.lifecycle.registerBeforeSuspendOrTerminateHandler(() => {});
+            app.lifecycle.registerBeforeSuspendOrTerminateHandler(async () => {});
 
             await utils.sendMessage('beforeUnload');
 
@@ -909,7 +1035,7 @@ describe('Testing app capability', () => {
       describe('Testing app.lifecycle.registerOnResumeHandler function', () => {
         it('should not allow calls before initialization', () => {
           expect(() =>
-            app.lifecycle.registerOnResumeHandler(() => {
+            app.lifecycle.registerOnResumeHandler(async () => {
               return false;
             }),
           ).toThrowError(new Error(errorLibraryNotInitialized));
@@ -923,8 +1049,7 @@ describe('Testing app capability', () => {
             app.lifecycle.registerOnResumeHandler(() => {
               handlerInvoked = true;
             });
-
-            await utils.sendMessage('load');
+            await utils.sendMessage('load', loadContext);
             expect(handlerInvoked).toBe(true);
           });
         });
@@ -938,6 +1063,7 @@ describe('Testing app capability', () => {
       utils = new Utils();
       utils.mockWindow.parent = undefined;
       utils.messages = [];
+      utils.setRespondWithTimestamp(false);
       app._initialize(utils.mockWindow);
       GlobalVars.isFramelessWindow = false;
     });
@@ -990,7 +1116,7 @@ describe('Testing app capability', () => {
         expect(initMessage).not.toBeNull();
         expect(initMessage.id).toBe(0);
         expect(initMessage.func).toBe('initialize');
-        expect(initMessage.args.length).toEqual(2);
+        expect(initMessage.args.length).toEqual(3);
         expect(initMessage.args[0]).toEqual(version);
         expect(initMessage.args[1]).toEqual(latestRuntimeApiVersion);
         expect(initMessage.timestamp).not.toBeNull();
@@ -1418,6 +1544,7 @@ describe('Testing app capability', () => {
             sourceOrigin: 'www.origin.com',
             teamTemplateId: 'someTeamTemplateId',
             userClickTime: 2222,
+            userClickTimeV2: 3333,
             userFileOpenPreference: FileOpenPreference.Inline,
             isMultiWindow: true,
             frameContext: context,
@@ -1435,6 +1562,7 @@ describe('Testing app capability', () => {
               osLocaleInfo: undefined,
               parentMessageId: 'someParentMessageId',
               userClickTime: 2222,
+              userClickTimeV2: 3333,
               userFileOpenPreference: FileOpenPreference.Inline,
               host: {
                 name: HostName.orange,
@@ -1528,7 +1656,72 @@ describe('Testing app capability', () => {
 
     describe('Testing app.notifySuccess function', () => {
       it('app.notifySuccess should not allow calls before initialization', () => {
-        expect(() => app.notifySuccess()).toThrowError(new Error(errorLibraryNotInitialized));
+        expect(app.notifySuccess).rejects.toThrowError(new Error(errorLibraryNotInitialized));
+      });
+
+      it('app.notifySuccess should allow calls after initialization called, but before it finished', async () => {
+        expect.assertions(2);
+
+        const initPromise = app.initialize();
+        const initMessage = utils.findMessageByFunc('initialize');
+        if (!initMessage) {
+          return;
+        }
+
+        // Send notify success before response from host
+        app.notifySuccess();
+        let message = utils.findMessageByFunc('appInitialization.success');
+        expect(message).toBeNull();
+
+        // Respond from host and then search message
+        await utils.respondToMessage(initMessage, 'content');
+        await initPromise;
+        message = utils.findMessageByFunc('appInitialization.success');
+        expect(message).not.toBeNull();
+      });
+
+      it('app.notifySuccess should resolve without response from host if default runtime', async () => {
+        expect.assertions(1);
+        await utils.initializeWithContext('context');
+
+        // Add app success message
+        const result = await app.notifySuccess();
+        expect(result.hasFinishedSuccessfully).toBe('unknown');
+      });
+
+      it('app.notifySuccess should resolve as soon as the host answers back', async () => {
+        expect.assertions(3);
+        await utils.initializeWithContext('context');
+        if (!ensureInitialized(runtime)) {
+          return;
+        }
+        applyRuntimeConfig({
+          ...runtime,
+          supports: {
+            ...runtime.supports,
+            app: {
+              notifySuccessResponse: true,
+            },
+          },
+        });
+
+        // Test that the promise hasn't resolved before host answers back
+        let hasPromisedResolved = false;
+        const notifySuccessPromise = app.notifySuccess().then((v) => {
+          hasPromisedResolved = true;
+          return v;
+        });
+        expect(hasPromisedResolved).toBe(false);
+
+        // Test the promise resolves successfully after host answers back
+        const notifySuccessMessage = utils.findMessageByFunc('appInitialization.success');
+        if (!notifySuccessMessage) {
+          return;
+        }
+        await utils.respondToMessage(notifySuccessMessage);
+        const result = await notifySuccessPromise;
+        expect(hasPromisedResolved).toBe(true);
+        expect(result.hasFinishedSuccessfully).toBe(true);
       });
 
       Object.values(FrameContexts).forEach((context) => {
@@ -1537,8 +1730,8 @@ describe('Testing app capability', () => {
           app.notifySuccess();
           const message = utils.findMessageByFunc(app.Messages.Success);
           expect(message).not.toBeNull();
-          expect(message.args.length).toBe(1);
-          expect(message.args[0]).toEqual(version);
+          expect(message?.args?.length).toBe(1);
+          expect((message?.args ?? [])[0]).toEqual(version);
         });
       });
     });
@@ -1581,6 +1774,73 @@ describe('Testing app capability', () => {
           expect(message.args[0]).toEqual(app.ExpectedFailureReason.PermissionError);
           expect(message.args[1]).toEqual('Failed message');
         });
+      });
+    });
+
+    describe('Testing hostToAppPerformanceMetricsHandler', () => {
+      it('app.registerHostToAppPerformanceMetricsHandler registered function should get called when api SDK call has timestamp', async () => {
+        await utils.initializeWithContext('content');
+        utils.setRespondWithTimestamp(true);
+
+        const handler = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handler);
+
+        // Call an sdk function such as getcontext
+        app.getContext();
+        const getContextMessage = utils.findMessageByFunc('getContext');
+        if (!getContextMessage) {
+          fail('Get context message was never created');
+        }
+        await utils.respondToMessage(getContextMessage, {});
+        expect(handler).toBeCalled();
+      });
+
+      it('app.registerHostToAppPerformanceMetricsHandler registered function should not get called when api SDK call does not have timestamp', async () => {
+        await utils.initializeWithContext('content');
+
+        const handler = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handler);
+
+        // Call an sdk function such as getcontext
+        app.getContext();
+        const getContextMessage = utils.findMessageByFunc('getContext');
+        if (!getContextMessage) {
+          fail('Get context message was never created');
+        }
+        await utils.respondToMessage(getContextMessage, {});
+        expect(handler).not.toBeCalled();
+      });
+
+      it('app.registerHostToAppPerformanceMetricsHandler registered function should not get called when api SDK call response has no info', async () => {
+        await utils.initializeWithContext('content');
+
+        const handler = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handler);
+
+        // Call an sdk function such as getcontext
+        app.getContext();
+        await utils.respondToMessage({ uuid: new UUID(), func: 'weirdFunc' }, {});
+        expect(handler).not.toBeCalled();
+      });
+
+      it('app.registerHostToAppPerformanceMetricsHandler should replace previously registered handler', async () => {
+        await utils.initializeWithContext('content');
+        utils.setRespondWithTimestamp(true);
+
+        const handlerOne = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handlerOne);
+        const handlerTwo = jest.fn();
+        app.registerHostToAppPerformanceMetricsHandler(handlerTwo);
+
+        // Call an sdk function such as getcontext
+        app.getContext();
+        const getContextMessage = utils.findMessageByFunc('getContext');
+        if (!getContextMessage) {
+          fail('Get context message was never created');
+        }
+        await utils.respondToMessage(getContextMessage, {});
+        expect(handlerTwo).toBeCalled();
+        expect(handlerOne).not.toBeCalled();
       });
     });
 
@@ -1690,7 +1950,7 @@ describe('Testing app capability', () => {
     describe('Testing app.lifecycle subcapability', () => {
       describe('Testing app.lifecycle.registerBeforeSuspendOrTerminateHandler function', () => {
         it('should not allow calls before initialization', () => {
-          expect(() => app.lifecycle.registerBeforeSuspendOrTerminateHandler(() => {})).toThrowError(
+          expect(() => app.lifecycle.registerBeforeSuspendOrTerminateHandler(async () => {})).toThrowError(
             new Error(errorLibraryNotInitialized),
           );
         });
@@ -1699,7 +1959,7 @@ describe('Testing app capability', () => {
           it(`app.lifecycle.registerBeforeSuspendOrTerminateHandler should successfully register a beforSuspendOrTerminate handler and readyToUnload should be called. context: ${context}`, async () => {
             await utils.initializeWithContext(context);
 
-            app.lifecycle.registerBeforeSuspendOrTerminateHandler(() => {});
+            app.lifecycle.registerBeforeSuspendOrTerminateHandler(async () => {});
             await utils.respondToFramelessMessage({
               data: {
                 func: 'beforeUnload',
@@ -1731,6 +1991,7 @@ describe('Testing app capability', () => {
             await utils.respondToFramelessMessage({
               data: {
                 func: 'load',
+                args: [loadContext],
               },
             } as DOMMessageEvent);
             expect(handlerInvoked).toBe(true);

@@ -1,8 +1,9 @@
 import { errorLibraryNotInitialized } from '../../src/internal/constants';
-import { app } from '../../src/public/app';
+import { LoadContext } from '../../src/public';
+import * as app from '../../src/public/app/app';
 import { errorNotSupportedOnPlatform, FrameContexts } from '../../src/public/constants';
 import { _minRuntimeConfigToUninitialize } from '../../src/public/runtime';
-import { teamsCore } from '../../src/public/teamsAPIs';
+import * as teamsCore from '../../src/public/teamsAPIs';
 import { Utils } from '../utils';
 
 /* eslint-disable */
@@ -31,6 +32,11 @@ describe('Testing TeamsCore Capability', () => {
         app._uninitialize();
       }
     });
+
+    const loadContext: LoadContext = {
+      entityId: 'testEntityId',
+      contentUrl: 'https://localhost:4000',
+    };
 
     describe('Testing teamsCore.isSupported function', () => {
       it('should throw if called before initialization', () => {
@@ -164,7 +170,7 @@ describe('Testing TeamsCore Capability', () => {
             return false;
           });
 
-          await utils.sendMessage('load');
+          await utils.sendMessage('load', loadContext);
 
           expect(handlerInvoked).toBe(true);
         });

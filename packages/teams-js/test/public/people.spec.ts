@@ -1,10 +1,10 @@
 import { errorLibraryNotInitialized } from '../../src/internal/constants';
 import { GlobalVars } from '../../src/internal/globalVars';
 import { DOMMessageEvent } from '../../src/internal/interfaces';
-import { app } from '../../src/public/app';
+import * as app from '../../src/public/app/app';
 import { errorNotSupportedOnPlatform, FrameContexts } from '../../src/public/constants';
 import { ErrorCode, SdkError } from '../../src/public/interfaces';
-import { people } from '../../src/public/people';
+import * as people from '../../src/public/people';
 import { v1HostClientTypes } from '../../src/public/runtime';
 import { Utils } from '../utils';
 
@@ -155,7 +155,9 @@ describe('people', () => {
   });
 
   describe('Testing people.isSupported function', () => {
+    let utils: Utils = new Utils();
     afterEach(() => {
+      utils = new Utils();
       app._uninitialize();
     });
     it('people.isSupported should return false if the runtime says people is not supported', async () => {

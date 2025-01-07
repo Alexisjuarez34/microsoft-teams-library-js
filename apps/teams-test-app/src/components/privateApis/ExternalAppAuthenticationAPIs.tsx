@@ -50,7 +50,7 @@ const AuthenticateAndResendRequest = (): React.ReactElement =>
     defaultInput: JSON.stringify({
       appId: 'b7f8c0a0-6c1d-4a9a-9c0a-2c3f1c0a3b0a',
       authenticateParameters: {
-        url: 'https://www.example.com',
+        url: 'https://localhost:4000',
         width: 100,
         height: 100,
         isExternal: true,
@@ -98,6 +98,44 @@ const AuthenticateWithOauth2 = (): React.ReactElement =>
     defaultInput: JSON.stringify({
       titleId: 'U_c05d3a9a-c029-02d5-c6fa-5a7583fd3abe',
       oauthConfigId: 'testOauthConfigId',
+      oauthWindowParameters: {
+        width: 400,
+        height: 400,
+        isExternal: false,
+      },
+    }),
+  });
+
+const AuthenticateWithPPC = (): React.ReactElement =>
+  ApiWithTextInput<{
+    titleId: string;
+    signInUrl?: URL;
+    oauthWindowParameters: {
+      width?: number;
+      height?: number;
+      isExternal?: boolean;
+    };
+  }>({
+    name: 'authenticateWithPowerPlatformConnectorPlugins',
+    title: 'Authenticate With Power Platform Connector Plugins',
+    onClick: {
+      validateInput: (input) => {
+        if (!input.titleId) {
+          throw new Error('titleId is required');
+        }
+      },
+      submit: async (input) => {
+        const result = await externalAppAuthentication.authenticateWithPowerPlatformConnectorPlugins(
+          input.titleId,
+          input.signInUrl ? new URL(input.signInUrl) : undefined,
+          input.oauthWindowParameters,
+        );
+        return JSON.stringify(result);
+      },
+    },
+    defaultInput: JSON.stringify({
+      titleId: 'U_c05d3a9a-c029-02d5-c6fa-5a7583fd3abe',
+      signInUrl: 'https://localhost:4000',
       oauthWindowParameters: {
         width: 400,
         height: 400,
@@ -186,6 +224,7 @@ const ExternalAppAuthenticationAPIs = (): React.ReactElement => (
     <CheckExternalAppAuthenticationCapability />
     <AuthenticateAndResendRequest />
     <AuthenticateWithOauth2 />
+    <AuthenticateWithPPC />
     <AuthenticateWithSSO />
     <AuthenticateWithSSOAndResendRequest />
   </ModuleWrapper>

@@ -1,4 +1,17 @@
-import { debug as registerLogger, Debugger } from 'debug';
+// We are directly referencing the browser implementation of `debug` to resolve an issue with polyfilling. For a full write-up on the bug please see ADO Bug #9619161
+import { debug as registerLogger, Debugger } from 'debug/src/browser';
+
+import { UUID } from './uuidObject';
+
+// Each teamsjs instance gets a unique identifier that will be prepended to every log statement
+export const teamsJsInstanceIdentifier = new UUID();
+
+// Every log statement will get prepended with the teamsJsInstanceIdentifier and a timestamp
+const originalFormatArgsFunction = registerLogger.formatArgs;
+registerLogger.formatArgs = function (args) {
+  args[0] = `(${new Date().toISOString()}): ${args[0]} [${teamsJsInstanceIdentifier.toString()}]`;
+  originalFormatArgsFunction.call(this, args);
+};
 
 const topLevelLogger = registerLogger('teamsJs');
 
@@ -94,6 +107,7 @@ export const enum ApiName {
   Conversations_OpenConversation = 'conversations.openConversation',
   Conversations_RegisterCloseConversationHandler = 'conversations.registerCloseConversationHandler',
   Conversations_RegisterStartConversationHandler = 'conversations.registerStartConversationHandler',
+  Copilot_Eligibility_GetEligibilityInfo = 'copilot.eligibility.getEligibilityInfo',
   Dialog_AdaptiveCard_Bot_Open = 'dialog.adaptiveCard.bot.open',
   Dialog_AdaptiveCard_Open = 'dialog.adaptiveCard.open',
   Dialog_RegisterMessageForChildHandler = 'dialog.registerMessageForChildHandler',
@@ -110,8 +124,15 @@ export const enum ApiName {
   ExternalAppAuthentication_AuthenticateWithSSO = 'externalAppAuthentication.authenticateWithSSO',
   ExternalAppAuthentication_AuthenticateWithSSOAndResendRequest = 'externalAppAuthentication.authenticateWithSSOAndResendRequest',
   ExternalAppAuthentication_AuthenticateWithOauth2 = 'externalAppAuthentication.authenticateWithOauth2',
+  ExternalAppAuthentication_AuthenticateWithPowerPlatformConnectorPlugins = 'externalAppAuthentication.authenticateWithPowerPlatformConnectorPlugins',
+  ExternalAppAuthenticationForCEA_AuthenticateWithOauth = 'externalAppAuthenticationForCEA.authenticateWithOauth',
+  ExternalAppAuthenticationForCEA_AuthenticateWithSSO = 'externalAppAuthenticationForCEA.authenticateWithSSO',
+  ExternalAppAuthenticationForCEA_AuthenticateAndResendRequest = 'externalAppAuthenticationForCEA.authenticateAndResendRequest',
+  ExternalAppAuthenticationForCEA_AuthenticateWithSSOAndResendRequest = 'externalAppAuthenticationForCEA.authenticateWithSSOAndResendRequest',
   ExternalAppCardActions_ProcessActionOpenUrl = 'externalAppCardActions.processActionOpenUrl',
   ExternalAppCardActions_ProcessActionSubmit = 'externalAppCardActions.processActionSubmit',
+  ExternalAppCardActionsForCEA_ProcessActionOpenUrl = 'externalAppCardActionsForCEA.processActionOpenUrl',
+  ExternalAppCardActionsForCEA_ProcessActionSubmit = 'externalAppCardActionsForCEA.processActionSubmit',
   ExternalAppCommands_ProcessActionCommands = 'externalAppCommands.processActionCommand',
   Files_AddCloudStorageFolder = 'files.addCloudStorageFolder',
   Files_AddCloudStorageProvider = 'files.addCloudStorageProvider',
@@ -137,6 +158,11 @@ export const enum ApiName {
   GeoLocation_RequestPermission = 'geoLocation.requestPermission',
   GeoLocation_ShowLocation = 'geoLocation.showLocation',
   HandleBeforeUnload = 'handleBeforeUnload',
+  HostEntity_Tab_addAndConfigureApp = 'hostEntity.tab.addAndConfigure',
+  HostEntity_Tab_reconfigure = 'hostEntity.tab.reconfigure',
+  HostEntity_Tab_rename = 'hostEntity.tab.rename',
+  HostEntity_Tab_remove = 'hostEntity.tab.remove',
+  HostEntity_Tab_getAll = 'hostEntity.tab.getAll',
   Interactive_GetClientInfo = 'interactive.getClientInfo',
   Interactive_GetClientRoles = 'interactive.getClientRoles',
   Interactive_GetFluidContainerId = 'interactive.getFluidContainerId',
@@ -198,7 +224,8 @@ export const enum ApiName {
   Menus_SetNavBarMenu = 'menus.setNavBarMenu',
   Menus_SetUpViews = 'menus.setUpViews',
   Menus_ShowActionMenu = 'menus.showActionMenu',
-  MessageChannels_GetTelemetryPort = 'messageChannels.getTelemetryPort',
+  MessageChannels_Telemetry_GetTelemetryPort = 'messageChannels.telemetry.getTelemetryPort',
+  MessageChannels_DataLayer_GetDataLayerPort = 'messageChannels.dataLayer.getDataLayerPort',
   Monetization_OpenPurchaseExperience = 'monetization.openPurchaseExperience',
   Navigation_NavigateBack = 'navigation.navigateBack',
   Navigation_NavigateCrossDomain = 'navigation.navigateCrossDomain',
@@ -207,6 +234,7 @@ export const enum ApiName {
   Notifications_ShowNotification = 'notifications.showNotification',
   OtherAppStateChange_Install = 'otherApp.install',
   OtherAppStateChange_UnregisterInstall = 'otherApp.unregisterInstall',
+  OtherAppStateChange_NotifyInstallCompleted = 'otherApp.notifyInstallCompleted',
   Pages_AppButton_OnClick = 'pages.appButton.onClick',
   Pages_AppButton_OnHoverEnter = 'pages.appButton.onHoverEnter',
   Pages_AppButton_OnHoverLeave = 'pages.appButton.onHoverLeave',
@@ -295,6 +323,8 @@ export const enum ApiName {
   Sharing_History_GetContent = 'sharing.history.getContent',
   Sharing_ShareWebContent = 'sharing.shareWebContent',
   StageView_Open = 'stageView.open',
+  StageView_Self_Close = 'stageView.self.close',
+  Store_Open = 'store.open',
   Tasks_StartTask = 'tasks.startTask',
   Tasks_SubmitTask = 'tasks.submitTask',
   Tasks_UpdateTask = 'tasks.updateTask',
@@ -337,4 +367,5 @@ export const enum ApiName {
   VisualMedia_Image_CaptureImages = 'visualMedia.image.captureImages',
   VisualMedia_Image_RetrieveImages = 'visualMedia.image.retrieveImages',
   VisualMedia_RequestPermission = 'visualMedia.requestPermission',
+  WebStorage_IsWebStorageClearedOnUserLogOut = 'webStorage.isWebStorageClearedOnUserLogOut',
 }

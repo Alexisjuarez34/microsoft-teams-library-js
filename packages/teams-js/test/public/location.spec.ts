@@ -1,7 +1,7 @@
 import { errorLibraryNotInitialized, locationAPIsRequiredVersion } from '../../src/internal/constants';
 import { GlobalVars } from '../../src/internal/globalVars';
 import { DOMMessageEvent } from '../../src/internal/interfaces';
-import { app } from '../../src/public/app';
+import * as app from '../../src/public/app/app';
 import { errorNotSupportedOnPlatform, FrameContexts } from '../../src/public/constants';
 import { ErrorCode, location, SdkError } from '../../src/public/index';
 import { setUnitializedRuntime } from '../../src/public/runtime';
@@ -293,8 +293,8 @@ describe('location', () => {
     });
 
     it('Frameless - getLocation should throw error when not supported in the runtime config', () => {
-      utils.setRuntimeConfig({ apiVersion: 1, supports: {} });
       utils.initializeWithContext(FrameContexts.task).then(() => {
+        utils.setRuntimeConfig({ apiVersion: 1, supports: {} });
         expect.assertions(1);
 
         try {
@@ -306,8 +306,8 @@ describe('location', () => {
     });
 
     it('Frameless - showLocation should throw error when location is not supported', () => {
-      utils.setRuntimeConfig({ apiVersion: 1, supports: {} });
       utils.initializeWithContext(FrameContexts.task).then(() => {
+        utils.setRuntimeConfig({ apiVersion: 1, supports: {} });
         expect.assertions(1);
 
         try {
@@ -394,8 +394,8 @@ describe('location', () => {
     });
 
     it('getLocation should throw error when not supported in the runtime config', () => {
-      utils.setRuntimeConfig({ apiVersion: 1, supports: {} });
       utils.initializeWithContext(FrameContexts.task).then(() => {
+        utils.setRuntimeConfig({ apiVersion: 1, supports: {} });
         expect.assertions(1);
 
         try {
@@ -407,8 +407,8 @@ describe('location', () => {
     });
 
     it('showLocation should throw error when location is not supported', () => {
-      utils.setRuntimeConfig({ apiVersion: 1, supports: {} });
       utils.initializeWithContext(FrameContexts.task).then(() => {
+        utils.setRuntimeConfig({ apiVersion: 1, supports: {} });
         expect.assertions(1);
 
         try {

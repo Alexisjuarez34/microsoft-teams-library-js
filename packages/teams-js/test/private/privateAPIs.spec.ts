@@ -1,4 +1,4 @@
-import { MessageResponse } from '../../src/internal/messageObjects';
+import { MessageRequest, MessageResponse } from '../../src/internal/messageObjects';
 import { UserSettingTypes, ViewerActionTypes } from '../../src/private/interfaces';
 import {
   openFilePreview,
@@ -7,10 +7,10 @@ import {
   sendCustomEvent,
   sendCustomMessage,
 } from '../../src/private/privateAPIs';
-import { app } from '../../src/public/app';
+import * as app from '../../src/public/app/app';
 import { FrameContexts, HostClientType, HostName, TeamType } from '../../src/public/constants';
 import { Context, FileOpenPreference } from '../../src/public/interfaces';
-import { MessageRequest, Utils } from '../utils';
+import { Utils } from '../utils';
 
 /* eslint-disable */
 /* As part of enabling eslint on test files, we need to disable eslint checking on the specific files with
@@ -117,6 +117,10 @@ describe('AppSDK-privateAPIs', () => {
     'https://www.microsoft365.com',
     'https://tasks.office.com',
     'https://www.example.com',
+    'https://teams.cloud.microsoft',
+    'https://outlook.cloud.microsoft',
+    'https://m365.cloud.microsoft',
+    'https://anythingbecauseitsawildcard.cloud.microsoft',
   ];
 
   supportedDomains.forEach((supportedDomain) => {
@@ -354,6 +358,7 @@ describe('AppSDK-privateAPIs', () => {
       appLaunchId: 'appLaunchId',
       sourceOrigin: 'someOrigin',
       userClickTime: 1000,
+      userClickTimeV2: 1001,
       teamTemplateId: 'com.microsoft.teams.ManageAProject',
       userFileOpenPreference: FileOpenPreference.Web,
     };

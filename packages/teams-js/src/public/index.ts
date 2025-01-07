@@ -1,4 +1,4 @@
-export { authentication } from './authentication';
+export * as authentication from './authentication';
 export {
   ChannelType,
   DialogDimension,
@@ -21,10 +21,12 @@ export {
   DeepLinkParameters,
   DialogInfo,
   DialogSize,
+  EduType,
   ErrorCode,
   FileOpenPreference,
   FrameContext,
   FrameInfo,
+  HostToAppPerformanceMetrics,
   LoadContext,
   LocaleInfo,
   M365ContentAction,
@@ -40,16 +42,21 @@ export {
   TeamInformation,
   UrlDialogInfo,
 } from './interfaces';
-export { app } from './app';
-export { appInstallDialog } from './appInstallDialog';
-export { barCode } from './barCode';
-export { chat, OpenGroupChatRequest, OpenSingleChatRequest } from './chat';
-export { clipboard } from './clipboard';
-export { dialog } from './dialog';
-export { nestedAppAuth } from './nestedAppAuth';
-export { geoLocation } from './geoLocation';
+export * as app from './app/app';
+export { AppId } from './appId';
+export { EmailAddress } from './emailAddress';
+export * as appInstallDialog from './appInstallDialog';
+export * as barCode from './barCode';
+export * as chat from './chat';
+//It is necessary to export the OpenGroupChatRequest and OpenSingleChatRequest interfaces from chat.ts individually as well
+//to keep the named exports so as to not break the existing consumers directly referencing the named exports.
+export { OpenGroupChatRequest, OpenSingleChatRequest } from './chat';
+export * as clipboard from './clipboard';
+export * as dialog from './dialog/dialog';
+export * as nestedAppAuth from './nestedAppAuth';
+export * as geoLocation from './geoLocation/geoLocation';
 export { getAdaptiveCardSchemaVersion } from './adaptiveCards';
-export { pages } from './pages';
+export * as pages from './pages/pages';
 export {
   addEventListnerFunctionType,
   ChildAppWindow,
@@ -57,27 +64,27 @@ export {
   onCompleteFunctionType,
   ParentAppWindow,
 } from './appWindow';
-export { menus } from './menus';
-export { media } from './media';
-export { secondaryBrowser } from './secondaryBrowser';
-export { location } from './location';
-export { meeting } from './meeting';
-export { monetization } from './monetization';
-export { calendar } from './calendar';
-export { mail } from './mail';
-export { teamsCore } from './teamsAPIs';
-export { people } from './people';
-export { profile } from './profile';
-export { videoEffects } from './videoEffects';
-export { search } from './search';
-export { sharing } from './sharing';
-export { stageView } from './stageView';
+export * as menus from './menus';
+export * as media from './media';
+export * as secondaryBrowser from './secondaryBrowser';
+export * as location from './location';
+export * as meeting from './meeting/meeting';
+export * as monetization from './monetization';
+export * as calendar from './calendar';
+export * as mail from './mail';
+export * as teamsCore from './teamsAPIs';
+export * as people from './people';
+export * as profile from './profile';
+export * as videoEffects from './videoEffects';
+export * as search from './search';
+export * as sharing from './sharing/sharing';
+export * as stageView from './stageView/stageView';
 export { version } from './version';
-export { visualMedia } from './visualMedia';
-export { webStorage } from './webStorage';
-export { call } from './call';
-export { appInitialization } from './appInitialization';
-export { thirdPartyCloudStorage } from './thirdPartyCloudStorage';
+export * as visualMedia from './visualMedia/visualMedia';
+export * as webStorage from './webStorage';
+export * as call from './call';
+export * as appInitialization from './appInitialization';
+export * as thirdPartyCloudStorage from './thirdPartyCloudStorage';
 export {
   callbackFunctionType,
   enablePrintCapability,
@@ -114,7 +121,11 @@ export {
   onCompleteHandlerFunctionType,
   returnFocus,
 } from './navigation';
-export { settings } from './settings';
-export { tasks } from './tasks';
-export { liveShare, LiveShareHost } from './liveShareHost';
-export { marketplace } from './marketplace';
+export * as settings from './settings';
+export * as tasks from './tasks';
+export * as liveShare from './liveShareHost';
+//It is necessary to export the LiveShareHost class from liveShareHost.ts individually as well
+//to keep the named exports so as to not break the existing consumers directly referencing the named exports.
+export { LiveShareHost } from './liveShareHost';
+export * as marketplace from './marketplace';
+export { ISerializable } from './serializable.interface';

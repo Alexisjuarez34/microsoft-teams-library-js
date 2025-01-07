@@ -223,6 +223,9 @@ interface IRuntimeV4 extends IBaseRuntime {
   readonly isNAAChannelRecommended?: boolean;
   readonly isLegacyTeams?: boolean;
   readonly supports: {
+    readonly app?: {
+      readonly notifySuccessResponse?: {};
+    };
     readonly appEntity?: {};
     readonly appInstallDialog?: {};
     readonly barCode?: {};
@@ -231,6 +234,9 @@ interface IRuntimeV4 extends IBaseRuntime {
     readonly chat?: {};
     readonly clipboard?: {};
     readonly conversations?: {};
+    readonly copilot?: {
+      readonly eligibility?: {};
+    };
     readonly dialog?: {
       readonly card?: {
         readonly bot?: {};
@@ -242,10 +248,15 @@ interface IRuntimeV4 extends IBaseRuntime {
       readonly update?: {};
     };
     readonly externalAppAuthentication?: {};
+    readonly externalAppAuthenticationForCEA?: {};
     readonly externalAppCardActions?: {};
+    readonly externalAppCardActionsForCEA?: {};
     readonly externalAppCommands?: {};
     readonly geoLocation?: {
       readonly map?: {};
+    };
+    readonly hostEntity?: {
+      readonly tab?: {};
     };
     readonly interactive?: {};
     readonly secondaryBrowser?: {};
@@ -255,7 +266,10 @@ interface IRuntimeV4 extends IBaseRuntime {
     readonly marketplace?: {};
     readonly meetingRoom?: {};
     readonly menus?: {};
-    readonly messageChannels?: {};
+    readonly messageChannels?: {
+      readonly telemetry?: {};
+      readonly dataLayer?: {};
+    };
     readonly monetization?: {};
     readonly nestedAppAuth?: {};
     readonly notifications?: {};
@@ -276,7 +290,10 @@ interface IRuntimeV4 extends IBaseRuntime {
     readonly sharing?: {
       readonly history?: {};
     };
-    readonly stageView?: {};
+    readonly stageView?: {
+      readonly self?: {};
+    };
+    readonly store?: {};
     readonly teams?: {
       readonly fullTrust?: {
         readonly joinedTeams?: {};
@@ -327,6 +344,26 @@ export function isRuntimeInitialized(runtime: IBaseRuntime): runtime is Runtime 
 
 export let runtime: Runtime | UninitializedRuntime = _uninitializedRuntime;
 
+/**
+ * This object is used as the default runtime for versions of Teams which don't pass a runtime object during
+ * initialization. If the host DOES pass a runtime object during init, then this object is not used.
+ *
+ * In practice, this is used in Teams V1 and ALL versions of Teams mobile since they are the only hosts
+ * that don't pass a runtime object during initialization (since they don't use the host SDK).
+ *
+ * If there are certain versions of Teams V1 or Teams mobile which support a capability but not ALL
+ * versions, then you should modify the mapTeamsVersionToSupportedCapabilities structure for that purpose. That
+ * structure allows you to specify particular versions on particular platforms that support certain capabilities.
+ * This structure is version agnostic.
+ *
+ * In practice, if you are adding a new capability, you are likely only to need to update mapTeamsVersionToSupportedCapabilities
+ * and NOT this structure, as this structure is effectively only used for capabilities that have existed "forever."
+ *
+ * Remember that everything here all still ONLY applies to versions of Teams that don't pass a runtime object during
+ * initialization -- if they do, then neither this object nor the mapTeamsVersionToSupportedCapabilities structure is
+ * used -- all runtime capabilities are dynamically discovered at runtime in the case where the runtime object is passed
+ * during initialization.
+ */
 export const versionAndPlatformAgnosticTeamsRuntimeConfig: Runtime = {
   apiVersion: 4,
   isNAAChannelRecommended: false,
@@ -495,6 +532,11 @@ export const upgradeChain: IRuntimeUpgrade[] = [
   },
 ];
 
+/**
+ * This structure is used for versions of Teams that don't pass a runtime object during initialization.
+ * Please see the extensive comments in versionAndPlatformAgnosticTeamsRuntimeConfig for more information
+ * on when and how to use this structure.
+ */
 export const mapTeamsVersionToSupportedCapabilities: Record<string, Array<ICapabilityReqs>> = {
   // 1.0.0 just signifies "these capabilities have practically always been supported." For some of these
   // we don't know what the real first version that supported them was -- but it was long enough ago that
@@ -549,6 +591,12 @@ export const mapTeamsVersionToSupportedCapabilities: Record<string, Array<ICapab
     {
       capability: { sharing: {} },
       hostClientTypes: [HostClientType.android, HostClientType.ios],
+    },
+  ],
+  '2.1.1': [
+    {
+      capability: { nestedAppAuth: {} },
+      hostClientTypes: [HostClientType.android, HostClientType.ios, HostClientType.ipados],
     },
   ],
 };

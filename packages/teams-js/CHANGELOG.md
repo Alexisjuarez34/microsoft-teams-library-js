@@ -1,8 +1,181 @@
 # Change Log - @microsoft/teams-js
 
-This log was last generated on Thu, 11 Apr 2024 05:06:48 GMT and should not be manually modified.
+This log was last generated on Fri, 13 Dec 2024 20:07:32 GMT and should not be manually modified.
 
 <!-- Start content -->
+
+## 2.32.0
+
+Fri, 13 Dec 2024 20:07:32 GMT
+
+### Minor changes
+
+- Added optional `FeatureSet` field to `AppEligibilityInformation` interface
+- Added `store` capability that will enable user to open several types of app store dialogs.. The capability is still awaiting support in one or most host applications. To track availability of this capability across different hosts see https://aka.ms/capmatrix
+- Added `nestedAppAuth` capability against a new client version `2.1.1` to support isNAAChannelRecommended for Teams Mobile
+
+### Patches
+
+- Added `ConversationResponse` to explicit named exports for back-compat
+- Resolved an issue with non-necessary polyfills being included
+- Backed out `Buffer` removal changes
+- Removed `@beta` tag from all functions on `dialog` capability (and all subcapabilities)
+
+## 2.31.1
+
+Wed, 20 Nov 2024 19:25:55 GMT
+
+### Patches
+
+- Fixed a bug causing `buffer` polyfill to stil be included
+- Fixed bugs regarding `EduType`not being exported, and enum typings
+
+## 2.31.0
+
+Wed, 13 Nov 2024 19:22:01 GMT
+
+### Minor changes
+
+- Made the library treeshakable.
+- Made `externalAppAuthenticationForCEA.ts` throw `Error` objects instead of `SdkErrors`.
+- Replaced `Buffer` with `uint8array-extras` to allow for `buffer` polyfill removal.
+- Added validation for AppId instance in CEA APIs.
+- Changed the `notifySuccess` function to indicate through a promise when the function finished processing in the host.
+- Added new timestamp and handler for analyzing latencies due to message delays between app and hub.
+
+### Patches
+
+- Add userClickTimeV2 to app `Context` to provide the timestamp when the user clicked the app using the performance timer API.
+- Increased the initialize response wait-timeout to 60 sec
+- Removed `type: module` from package.json to fix nextjs bug
+- Added validation for `IActionExecuteInvokeRequest.data` element in `ExternalAppAuthentication` and `ExternalAppAuthenticationForCEA` capabilities. The element can be of type primitive or plain object only
+
+## 2.30.0
+
+Mon, 21 Oct 2024 18:11:30 GMT
+
+### Minor changes
+
+- Updated `copilot.eligibility.getEligibilityInfo` to be async and get the eligibility info from the host if it is not already available.
+
+### Patches
+
+- Updated edgeapi.freya.svc.cloud.microsoft to chatuxmanager.svc.cloud.microsoft.
+- Updated edgeapi endpoint from `edgeapi.svc.cloud.microsoft` to `edgeapi.freya.svc.cloud.microsoft` in valid domains list. Added `work.bing.com` to valid domains list.
+- Clarified usage for `validMessageOrigins` parameter on `app.initialize` in documentation.
+
+## 2.29.0
+
+Thu, 03 Oct 2024 22:51:48 GMT
+
+### Minor changes
+
+- Added support for `externalAppAuthenticationForCEA` capability
+- Added support for `externalAppCardActionsForCEA` capability
+- Added logging for current teamsjs instance and timestamps
+- Added a Rollup built bundle of Teams-JS
+- Added three properties to `ICallDetails`, `originalCallerInfo`, `dialedEntityInfo`, and `callId`, created a new type `ICallParticipantIdentifiers`, and deprecated the `originalCaller` and `dialedEntity` properties
+- Updated `pages.navigateToApp` to now optionally accept a more type-safe input object
+- Added logging for version on startup
+
+### Patches
+
+- Updated logging for messages to be clearer
+- Added `edgeapi.svc.cloud.microsoft` to valid domains list
+- Updated internal app id validation
+- Unified common data models for external card actions into `externalAppCardActions` namespace.
+- Updated types for `externalAppCardActionsForCEA` capability.
+
+## 2.28.0
+
+Tue, 03 Sep 2024 22:19:52 GMT
+
+### Minor changes
+
+- Removed invalid validations for content fields on `IContentResponse` interface
+
+### Patches
+
+- Fixed a bug with `AppEligibilityInformation` that could cause `app.initialize` to fail.
+
+## 2.27.0
+
+Wed, 28 Aug 2024 19:31:44 GMT
+
+### Minor changes
+
+- Added 1P-only `hostEntity` capability for adding and configuring, removing, renaming, re-configuring and fetching all tabs.
+- Added optional field `messageId` to `stageView.open`. Passing `messageId` to `stageView.open` allows opening the stageView in a channel meeting
+- Added optional enum attribute for `registerFocusEnterHandler` and `returnFocus` APIs that allows developers to send and receive more nuanced information about where focus should go in their app or the host respectively
+- Added `copilot` and `copilot.eligibility` capability that will get the eligibility information of the user using M365ChatApp. The capability is still awaiting support in one or most host applications. To track availability of this capability across different hosts see https://aka.ms/capmatrix
+- Added new `AppId` class to use as a type where app ids are being stored
+
+### Patches
+
+- Added `*.m365.cloud.microsoft` to dynamic domain list
+- Moved `AppId` type to public folder
+- Enabled `webStorage` capability to be used on Teams Mobile in compatibility scenarios
+- Updated documentation on usage of `versionAndPlatformAgnosticTeamsRuntimeConfig` and `mapTeamsVersionToSupportedCapabilities`
+
+## 2.26.0
+
+Wed, 07 Aug 2024 19:24:31 GMT
+
+### Minor changes
+
+- Added `self` capability that will allow the stage to perform an operation on itself (eg. close). The capability is still awaiting support in one or most host applications. To track availability of this capability across different hosts see https://aka.ms/capmatrix
+- Added support for any `*.cloud.microsoft` domain to be a valid host
+- Added new fields to `VideoFrameConfig` and `VideoFrameData` to allow specifying additional capabilities to be applied to a video frame and reading arbitrary attributes on a video frame respectively. The capability is still awaiting support in one or most host applications. To track availability of this capability across different hosts see https://aka.ms/capmatrix
+- Added `chatId` in `pages.navigateToApp` api for deep link support in chat
+
+### Patches
+
+- Added WXP domain for unified store to the dynamic domain list
+- Fixed behavior of the `isValidOriginsCacheEmpty` function whose name was backwards of what it was actually doing
+- Updated error handling of malformed/missing origin URLs
+- Updated `authentication.getUser` to properly unwrap `SdkError` returned from host into a message
+- Used app and authentication apis for diagnostic app functionality.
+
+## 2.25.0
+
+Wed, 03 Jul 2024 18:11:19 GMT
+
+### Patches
+
+- Fixed `dialog.url.submit` api to support only `FrameContext.content`.
+- Updated `clipboard.isSupported` so that it does not depend on `navigator.clipboard` in frameless contexts.
+- Updated whitespace in `clipboard.ts` file to match conventions
+
+## 2.24.0
+
+Wed, 05 Jun 2024 20:49:06 GMT
+
+### Minor changes
+
+- Updated `app.lifecycle.registerBeforeSuspendOrTerminateHandler` to be asynchronous, and updated `app.lifecycle.registerOnResumeHandler` to accept a new Handler type, changing `contentUrl` from `string` to `URL` object.
+- Added `uuid` parameter to `MessageRequest` and `MessageResponse` interfaces
+- Added a new page property (`isBackgroundLoad`) for app context. This will be an indicator that the app is being loaded in the background.
+
+## 2.23.0
+
+Tue, 07 May 2024 20:54:35 GMT
+
+### Minor changes
+
+- Added a new API `externalAppAuthentication.authenticateWithPowerPlatformConnectorPlugins`. It can be used to perform authentication with Power Platform connector plugins.
+- Added `messageChannels.telemetry` and moved existing telemetryPort code into it. Added new `messageChannels.dataLayer` subcapability and added code for interacting with the host data layer.
+- Added `meeting.getMeetingDetailsVerbose` to allow retrieving additional meeting details from supported hosts.
+- Added support for `content` frame context to `liveShare` capability. Live Share SDK works now in Chat/Channel Tab and Collab Stage view contexts with this change.
+
+### Patches
+
+- Cleaned up import structure in the `private` folder
+- Fixed API telemetry tag for `pages.navigateToApp` function
+- Updated `authentication.authenticate` so that it only accepts https URLs.
+- Added `validMessageOrigins` to be passed to `parentWindow`.
+- Updated `webStorage` capability to query host for capability support, rather than using a hardcoded answer.
+- Fixed a bug with exported `const enums`
+- Made a skeletonized version of the buffer npm package as a temporary measure to reduce bundle size
 
 ## 2.22.0
 
@@ -255,7 +428,7 @@ Fri, 03 Mar 2023 19:57:31 GMT
 
 - Updated documentation for `dialog` and `tasks` capabilities
 - Elaborated on various areas of `authentication` documentation
-- Added @beta tags to `registerBeforeUnloadHandler` and `registerOnLoadHandler` APIs.
+- Added @beta tags to `registerBeforeUnloadHandler` and `registerOnLoadHandler` APIs.
 
 ## 2.8.0
 
@@ -270,7 +443,7 @@ Wed, 01 Feb 2023 23:22:55 GMT
 
 ### Patches
 
-- Added @beta tags to `registerBeforeUnloadHandler` and `registerOnLoadHandler` APIs.
+- Added @beta tags to `registerBeforeUnloadHandler` and `registerOnLoadHandler` APIs.
 - Updated typedoc version and fixed doc issues raised by it
 - Added documentation for `dialog.submit`
 - Changed user facing documentation associated with `meeting.ts`

@@ -1,16 +1,32 @@
 {
+  "cSpell.words": [
+    "adal",
+    "frameless",
+    "ipados",
+    "parentless",
+    "Subcapability",
+    "teamsjs",
+    "teamspace",
+    "uninitialize",
+    "xvfb"
+  ],
   "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "eslint.workingDirectories": [
+    "./apps/ssr-test-app/",
+    "./apps/teams-perf-test-app",
+    "./apps/teams-test-app/",
+    "./apps/typed-dependency-tester/",
+    "./packages/teams-js/"
+  ],
   "editor.formatOnSave": true,
   "editor.insertSpaces": true,
   "editor.tabSize": 2,
+  "javascript.preferences.quoteStyle": "single",
+  "jest.jestCommandLine": "pnpm test -- --",
+  "jest.runMode": { "runAllTestsOnStartup": true, "type": "watch" },
   "search.exclude": {
     "**/dist": true
   },
-  "typescript.tsdk": "./node_modules/typescript/lib",
-  "javascript.preferences.quoteStyle": "single",
   "typescript.preferences.quoteStyle": "single",
-  "prettier.singleQuote": true,
-  "cSpell.words": ["adal", "uninitialize"],
-  "jest.jestCommandLine": "pnpm test -- --",
-  "jest.autoRun": { "watch": "true", "onStartup": ["all-tests"] }
+  "typescript.tsdk": "./node_modules/typescript/lib"
 }

@@ -1,14 +1,19 @@
+/**
+ * Navigation specific part of the SDK.
+ * @module
+ */
+
 import { ensureInitialized } from '../internal/internalAPIs';
-import { ApiName, ApiVersionNumber, getApiVersionTag } from '../internal/telemetry';
-import { getGenericOnCompleteHandler } from '../internal/utils';
-import { FrameContexts } from './constants';
-import { TabInstance } from './interfaces';
 import {
   backStackNavigateBackHelper,
   navigateCrossDomainHelper,
   returnFocusHelper,
   tabsNavigateToTabHelper,
-} from './pages';
+} from '../internal/pagesHelpers';
+import { ApiName, ApiVersionNumber, getApiVersionTag } from '../internal/telemetry';
+import { getGenericOnCompleteHandler } from '../internal/utils';
+import { FrameContexts } from './constants';
+import { TabInstance } from './interfaces';
 import { runtime } from './runtime';
 
 /**
@@ -16,15 +21,11 @@ import { runtime } from './runtime';
  */
 const navigationTelemetryVersionNumber: ApiVersionNumber = ApiVersionNumber.V_1;
 
-/**
- * Navigation specific part of the SDK.
- */
-
 /** Navigation on complete handler function type */
 export type onCompleteHandlerFunctionType = (status: boolean, reason?: string) => void;
 /**
  * @deprecated
- * As of 2.0.0, please use {@link pages.returnFocus pages.returnFocus(navigateForward?: boolean): void} instead.
+ * As of TeamsJS v2.0.0, please use {@link pages.returnFocus pages.returnFocus(navigateForward?: boolean): void} instead.
  *
  * Return focus to the main Teams app. Will focus search bar if navigating foward and app bar if navigating back.
  *
@@ -39,7 +40,7 @@ export function returnFocus(navigateForward?: boolean): void {
 
 /**
  * @deprecated
- * As of 2.0.0, please use {@link pages.tabs.navigateToTab pages.tabs.navigateToTab(tabInstance: TabInstance): Promise\<void\>} instead.
+ * As of TeamsJS v2.0.0, please use {@link pages.tabs.navigateToTab pages.tabs.navigateToTab(tabInstance: TabInstance): Promise\<void\>} instead.
  *
  * Navigates the Microsoft Teams app to the specified tab instance.
  *
@@ -63,14 +64,10 @@ export function navigateToTab(tabInstance: TabInstance, onComplete?: onCompleteH
 
 /**
  * @deprecated
- * As of 2.0.0, please use {@link pages.navigateCrossDomain pages.navigateCrossDomain(url: string): Promise\<void\>} instead.
- *
- * Navigates the frame to a new cross-domain URL. The domain of this URL must match at least one of the
- * valid domains specified in the validDomains block of the manifest; otherwise, an exception will be
- * thrown. This function needs to be used only when navigating the frame to a URL in a different domain
- * than the current one in a way that keeps the app informed of the change and allows the SDK to
- * continue working.
- *
+ * As of 2.0.0, this API is deprecated and can be replaced by the standard JavaScript
+ * API, window.location.href, when navigating the app to a new cross-domain URL. Any URL
+ * that is redirected to must be listed in the validDomains block of the manifest. Please
+ * remove any calls to this API.
  * @param url - The URL to navigate the frame to.
  * @param onComplete - The callback to invoke when the action is complete.
  */
@@ -100,7 +97,7 @@ export function navigateCrossDomain(url: string, onComplete?: onCompleteHandlerF
 
 /**
  * @deprecated
- * As of 2.0.0, please use {@link pages.backStack.navigateBack pages.backStack.navigateBack(): Promise\<void\>} instead.
+ * As of TeamsJS v2.0.0, please use {@link pages.backStack.navigateBack pages.backStack.navigateBack(): Promise\<void\>} instead.
  *
  * Navigates back in the Teams client.
  * See registerBackButtonHandler for more information on when it's appropriate to use this method.

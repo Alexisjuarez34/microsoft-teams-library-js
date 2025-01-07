@@ -2,6 +2,15 @@ parameters:
   - name: 'androidAppHostingSdkGitPath'
     default: none
     type: string
+  - name: 'shardNum'
+    displayName: 'Number of test shards'
+    type: number
+    default: 1
+  - name: 'shardIndex'
+    displayName: 'Index of test shard'
+    type: number
+    default: 0
+
 
 steps:
   - checkout: self
@@ -25,7 +34,7 @@ steps:
     inputs:
       script: |
         corepack enable
-        corepack prepare pnpm@7.30.1 --activate
+        corepack prepare pnpm@9.0.6 --activate
         pnpm config set store-dir $(Pipeline.Workspace)/.pnpm-store
 
   - task: CmdLine@2
@@ -51,13 +60,13 @@ steps:
 
   - task: Bash@3
     displayName: 'Install Emulator'
+    # This task is flaky, but when it works it almost always completes in under 5 minutes.
+    # Setting the timeout to 20 minutes because it seems to take a little longer since we moved to MacOS 15 runner
+    timeoutInMinutes: 20
     inputs:
       targetType: inline
       script: 'chmod u+x install_emulator.sh && ./install_emulator.sh'
       workingDirectory: '$(Agent.BuildDirectory)/androidHost/devtools/ci'
-      # This task is flaky, but when it works it almost always completes in under 5 minutes.
-      # Setting the timeout to 10 minutes so we can fail faster when it fails.
-      timeoutInMinutes: 10
 
   - task: JavaToolInstaller@0
     inputs:
@@ -70,14 +79,22 @@ steps:
   - task: MavenAuthenticate@0
     displayName: 'Authenticate machine'
     inputs:
-      artifactsFeeds: 'LensSDKAndroidIA20'
+      artifactsFeeds: 'ISS_PublicPackages,LensSDKAndroidIA20'
 
   - task: Bash@3
     displayName: 'Run Android E2E Tests'
     inputs:
       targetType: inline
-      script: 'chmod u+x ./gradlew && chmod u+x e2eTest.sh && ./e2eTest.sh'
+      script: 'chmod u+x ./gradlew && chmod u+x e2eTest.sh && ./e2eTest.sh ${{ parameters.shardNum }} ${{ parameters.shardIndex }}'
       workingDirectory: '$(Agent.BuildDirectory)/androidHost/apps/orangeandroid'
+
+  - task: Bash@3
+    displayName: 'Pull Test Artifacts'
+    inputs:
+      targetType: inline
+      script: 'chmod u+x e2eTestCopyArtifacts.sh && ./e2eTestCopyArtifacts.sh'
+      workingDirectory: '$(Agent.BuildDirectory)/androidHost/apps/orangeandroid'
+    condition: always()
 
   - task: PublishTestResults@2
     displayName: 'Publish Test Results'
@@ -87,4 +104,11 @@ steps:
       testRunTitle: 'E2E Tests - Android'
       searchFolder: '$(Agent.BuildDirectory)/androidHost'
       mergeTestResults: true
-    condition: or(succeededOrFailed(), eq(variables['Agent.JobStatus'], 'Canceled'))
+    condition: always()
+
+  - task: 1ES.PublishPipelineArtifact@1
+    displayName: 'Publish logs artifact'
+    inputs:
+      path: '$(Agent.BuildDirectory)/androidHost/apps/orangeandroid/androidTestArtifacts'
+      artifact: androidTestArtifacts-shard${{ parameters.shardIndex }}-attempt$(System.JobAttempt)
+    condition: always()
